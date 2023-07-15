@@ -25,9 +25,9 @@ const run = async () => {
 
     app.get('/books', async (req, res) => {
       const cursor = bookCollection.find({});
-      const product = await cursor.toArray();
+      const book = await cursor.toArray();
 
-      res.send({ status: true, data: product });
+      res.send({ status: true, data: book });
     });
     
   } finally {
