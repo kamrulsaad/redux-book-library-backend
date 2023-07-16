@@ -22,6 +22,7 @@ const run = async () => {
   try {
     const db = client.db('britania');
     const bookCollection = db.collection('books');
+    const userCollection = db.collection('users');
 
     app.get('/books', async (req, res) => {
       const cursor = bookCollection.find({}).sort({ _id: -1 })
@@ -29,6 +30,14 @@ const run = async () => {
 
       res.send({ status: true, data: book });
     });
+
+    app.get('/book/:id', async (req, res) => {
+      const result = await bookCollection.findOne({ _id: ObjectId(req.params.id) })
+      res.send({
+        status: true,
+        data: result
+      })
+    })
 
     app.post('/book', async (req, res) => {
       const data = { ...req.body, reviews: [] }
@@ -38,6 +47,52 @@ const run = async () => {
         status: true, data: result.insertedId
       })
     })
+
+    app.patch('/book/:id', async (req, res) => {
+      const { ...data } = req.body
+
+      const result = await bookCollection.updateOne({ _id: ObjectId(req.params.id) }, { $set: data })
+      res.send({
+        status: true, data: result.upsertedId
+      })
+    })
+
+    app.delete('/book/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await bookCollection.deleteOne({ _id: ObjectId(id) });
+      res.send(result);
+    });
+
+    app.get('/review/:id', async (req, res) => {
+      const bookId = req.params.id;
+
+      const result = await bookCollection.findOne(
+        { _id: ObjectId(bookId) },
+        { projection: { _id: 0, reviews: 1 } }
+      );
+
+      if (result) {
+        res.json(result);
+      } else {
+        res.status(404).json({ error: 'Book not found' });
+      }
+    });
+
+    app.post('/review/:id', async (req, res) => {
+      const bookId = req.params.id;
+      const review = req.body.review;
+
+      const result = await bookCollection.updateOne(
+        { _id: ObjectId(bookId) },
+        { $push: { reviews: review } }
+      );
+
+      if (result.modifiedCount !== 1) {
+        res.json({ error: 'Product not found or comment not added' });
+        return;
+      }
+      res.json({ message: 'Comment added successfully' });
+    });
 
   } finally {
   }
