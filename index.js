@@ -24,12 +24,21 @@ const run = async () => {
     const bookCollection = db.collection('books');
 
     app.get('/books', async (req, res) => {
-      const cursor = bookCollection.find({});
+      const cursor = bookCollection.find({}).sort({ _id: -1 })
       const book = await cursor.toArray();
 
       res.send({ status: true, data: book });
     });
-    
+
+    app.post('/book', async (req, res) => {
+      const data = { ...req.body, reviews: [] }
+
+      const result = await bookCollection.insertOne(data)
+      res.send({
+        status: true, data: result.insertedId
+      })
+    })
+
   } finally {
   }
 };
