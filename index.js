@@ -94,6 +94,87 @@ const run = async () => {
       res.json({ message: 'Comment added successfully' });
     });
 
+    app.post('/user', async (req, res) => {
+      const data = req.body
+      const result = await userCollection.insertOne({ ...data, wishlist: [], reading: [] })
+      res.send({
+        status: true,
+        data: result.insertedId
+      })
+    })
+
+    app.post('/wishlist/:email', async (req, res) => {
+      const data = req.body
+
+      const user = await userCollection.findOne({ email: req.params.email });
+
+      const bookAlreadyInWishlist = user.wishlist.some(book => book._id.toString() === data._id);
+
+      if (bookAlreadyInWishlist) {
+        return res.status(409).json({ status: false, message: 'Book already in the wishlist' });
+      }
+
+      const result = await userCollection.updateOne({ email: req.params.email }, { $push: { wishlist: data } });
+      res.send({
+        status: true,
+        data: result.upsertedId
+      })
+    })
+
+    app.get('/wishlist/:email', async (req, res) => {
+      const result = await userCollection.findOne({ email: req.params.email }, { projection: { _id: 0, wishlist: 1 } });
+
+      res.send({
+        status: true,
+        data: result
+      })
+    })
+
+    app.post('/reading/:email', async (req, res) => {
+      const data = req.body
+
+      const user = await userCollection.findOne({ email: req.params.email });
+
+      const bookAlreadyInWishlist = user.reading.some(book => book._id.toString() === data._id);
+
+      if (bookAlreadyInWishlist) {
+        return res.status(409).json({ status: false, message: 'Book already in the reading list' });
+      }
+
+      const result = await userCollection.updateOne({ email: req.params.email }, { $push: { reading: { ...data, completed: false } } });
+      res.send({
+        status: true,
+        data: result.upsertedId
+      })
+    })
+
+    app.get('/reading/:email', async (req, res) => {
+      const result = await userCollection.findOne({ email: req.params.email }, { projection: { _id: 0, reading: 1 } });
+
+      res.send({
+        status: true,
+        data: result
+      })
+    })
+
+    app.patch('/complete/:email', async (req, res) => {
+      const book = req.body;
+      const userEmail = req.params.email
+
+      console.log(book)
+
+
+      const user = await userCollection.findOne({ email: userEmail });
+
+      const bookToUpdate = user.reading.find(book => book._id.toString() === book?._id);
+
+      bookToUpdate.completed = true;
+      await userCollection.updateOne({ email: userEmail }, { $set: { reading: user.reading } });
+
+      res.status(200).json({ status: true, data: user.reading });
+    })
+
+
   } finally {
   }
 };
