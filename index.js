@@ -160,10 +160,6 @@ const run = async () => {
     app.patch('/complete/:email', async (req, res) => {
       const book = req.body;
       const userEmail = req.params.email
-
-      console.log(book)
-
-
       const user = await userCollection.findOne({ email: userEmail });
 
       const bookToUpdate = user.reading.find(book => book._id.toString() === book?._id);
